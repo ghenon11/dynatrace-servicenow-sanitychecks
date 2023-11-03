@@ -11,3 +11,5 @@ Need request and jinga2 modules
 
 Scripts will output results as html file in directory ./www
 Scripts will put temporary files in directory ./data
+
+Update the configuration file (.ini) with your settings
