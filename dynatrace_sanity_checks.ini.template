@@ -1,0 +1,26 @@
+[DYNATRACE]
+URL=https://instance.live.dynatrace.com
+TOKEN_READ_ENTITY=dtxxxx.yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+TOKEN_WRITE_SETTINGS=dtxxxx.yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+TOKEN_READ_AUDITLOGS=dtxxxx.yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+TOKEN_READ_PROBLEMS=dtxxxx.yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+AUDITLOGS_ENTITIES_TO_EXCLUDE=DASHBOARDS_SETTINGS,DATA_EXPLORER,alerting.maintenance-window
+AUDITLOGS_USER_TO_EXCLUDE=settings conversion migration,system,ExtensionAsyncRequestsWorker,settings notification handler,runtime configuration migration,notificationHandler
+#list of strings that should exist in alerting profile. It is those alerting profiles that triggered ServiceNow integration
+ALERTING_PROFILE_TO_CONSIDER=ServiceNow
+# list of strings -> if missing bad hostgroup
+# keep empty if no strings to check
+HOSTGROUP_CHECKSTRINGINNAME=
+# one key missing in host tag -> bad hostgroup
+#HOSTGROUP_CHECKTAG=PROD_ENV
+# one key,value exists in host tags -> bad hostgroup
+HOSTGROUP_CHECKTAG=
+# list of strings -> if exists bad hostgroup
+# keep empty if no strings to check
+HOSTGROUP_CHECKSTRINGNOTINNAME=tobedefined
+
+[SERVICENOW]
+URL=https://instance.service-now.com
+API_USER = api_user
+API_PASSWD = api_passwd
+SERVERSTOMONITOR_QUERY=sys_class_name=cmdb_ci_win_server^ORsys_class_name=cmdb_ci_linux_server^monitor=True
