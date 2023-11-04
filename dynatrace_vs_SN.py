@@ -106,14 +106,10 @@ def build_open_problems():
                 openproblems[i]['Expected_ServiceNow']=False
 
                     
-    except requests.exceptions.HTTPError as errh:
-        logging.error(errh)
-    except requests.exceptions.ConnectionError as errc:
-        logging.error(errc)
-    except requests.exceptions.Timeout as errt:
-        logging.error(errt)
-    except requests.exceptions.RequestException as err:
+    except Exception as err:
         logging.error(err)
+        logging.error(traceback.format_exc())
+        exit()
     return openproblems
 
 
@@ -138,6 +134,7 @@ def find_incident_from_problem(PrbID):
     #url = SERVICENOW_URL+"/api/now/table/incident?sysparm_query=short_descriptionCONTAINS"+PrbID+"%3A^sys_created_by=dynatrace_user&sysparm_view=Desktop&sysparm_display_value=true"
     user = config['SERVICENOW']['API_USER']
     password = config['SERVICENOW']['API_PASSWD']
+    logging.debug("user["+user+"] passwd["+password+"]")
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
     datafile=BASE_DATA_DIR+'servicenow_prb_'+PrbID+'.json'
     try:
@@ -159,15 +156,10 @@ def find_incident_from_problem(PrbID):
         else:
             oneinc=""
 
-    except requests.exceptions.HTTPError as errh:
-        logging.error(errh)
-    except requests.exceptions.ConnectionError as errc:
-        logging.error(errc)
-    except requests.exceptions.Timeout as errt:
-        logging.error(errt)
-    except requests.exceptions.RequestException as err:
+    except Exception as err:
         logging.error(err)
-        print(traceback.format_exc())
+        logging.error(traceback.format_exc())
+        exit()
     return oneinc
 
 
