@@ -1,5 +1,5 @@
 #
-# Made by Guillaume HENON
+# Author: Guillaume HENON
 # October 2023
 #
 import logging,traceback,argparse, configparser
@@ -13,7 +13,6 @@ from datetime import datetime
 
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)) + os.sep)
 BASE_DATA_DIR = BASE_DIR + 'data'+ os.sep
-REUSE=False
 
 ap = argparse.ArgumentParser(description="Script to compare open problems in Dynatrace and incidents in ServiceNow through API calls")
 # Add the arguments to the parser
@@ -64,17 +63,13 @@ def build_open_problems():
     session.headers.update({"Content-Type":"application/json"})
     session.headers.update({"Authorization": "Api-Token "+token})
     try:
-        if REUSE and os.path.isfile(datafile) :
-            with open(datafile) as f:
-                json_data=json.load(f)
-        else:
-            response = session.get(base_url)
-            response.raise_for_status()
-            logging.debug("Problem API response: "+str(response.status_code))
+        response = session.get(base_url)
+        response.raise_for_status()
+        logging.debug("Problem API response: "+str(response.status_code))
        #     text = json.dumps(response.json(), sort_keys=True, indent=4)
-            json_data = response.json()
-            with open(BASE_DATA_DIR+'dynatrace_data.json', 'w', encoding='utf-8') as f:
-                json.dump(json_data, f, ensure_ascii=False, indent=4)
+        json_data = response.json()
+        with open(BASE_DATA_DIR+'dynatrace_data.json', 'w', encoding='utf-8') as f:
+            json.dump(json_data, f, ensure_ascii=False, indent=4)
 
         openproblemscount=json_data['totalCount']
         logging.info("Open Problems:"+str(openproblemscount))
@@ -112,21 +107,26 @@ def build_open_problems():
         exit()
     return openproblems
 
-
 def find_incident_from_problem(PrbID):
     oneinc=""
+    reuse=False
     url = SERVICENOW_URL+"/api/now/table/incident?sysparm_query=short_descriptionCONTAINS"+PrbID+"%3A^sys_created_by=dynatrace_user&sysparm_view=Desktop&sysparm_display_value=true"
 # we look at last run to see if we already have the sys_id as query with sys_id is quickest   
-    result_datafile=BASE_DATA_DIR+'result.json'
+    result_datafile=BASE_DATA_DIR+'result_dynatrace_vs_SN.json'
     if os.path.isfile(result_datafile):
         with open(result_datafile) as rf:
             sanity_data=json.load(rf)
         for l in range(len(sanity_data)):
             if PrbID in sanity_data[l].values():
                 if "Incident" in sanity_data[l]:
-                    if "sys_id" in sanity_data[l]['Incident']:
-                        IncidentSys_id=sanity_data[l]['Incident']['sys_id']
-                        url = SERVICENOW_URL+"/api/now/table/incident?sysparm_query=sys_id%3D"+IncidentSys_id+"&sysparm_view=Desktop&sysparm_display_value=true"
+                    if "state" in sanity_data[l]['Incident']:
+                        if sanity_data[l]['Incident']['state']=="Closed": #incident was already closed so status do not change
+                            logging.debug("Incident already closed, load from file")
+                            reuse=True
+                        else:
+                            if "sys_id" in sanity_data[l]['Incident']:
+                                IncidentSys_id=sanity_data[l]['Incident']['sys_id']
+                                url = SERVICENOW_URL+"/api/now/table/incident?sysparm_query=sys_id%3D"+IncidentSys_id+"&sysparm_view=Desktop&sysparm_display_value=true"
 
     # Set the request parameters
     # https://developer.servicenow.com/dev.do#!/reference/api/vancouver/rest/c_TableAPI
@@ -134,15 +134,15 @@ def find_incident_from_problem(PrbID):
     #url = SERVICENOW_URL+"/api/now/table/incident?sysparm_query=short_descriptionCONTAINS"+PrbID+"%3A^sys_created_by=dynatrace_user&sysparm_view=Desktop&sysparm_display_value=true"
     user = config['SERVICENOW']['API_USER']
     password = config['SERVICENOW']['API_PASSWD']
-    logging.debug("user["+user+"] passwd["+password+"]")
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
     datafile=BASE_DATA_DIR+'servicenow_prb_'+PrbID+'.json'
     try:
-        if REUSE and os.path.isfile(datafile) :
-            with open(datafile) as f:
+        if reuse and os.path.isfile(datafile) :
+            with open(datafile,encoding="utf8") as f:
                 json_data=json.load(f)
         else:
             logging.info("Query ServiceNow: find incident for problem ["+PrbID+"], using URL["+url+"]")
+            logging.debug("user["+user+"] passwd["+password+"]")
             response = requests.get(url, auth=(user, password), headers=headers)
             response.raise_for_status()
             logging.debug("DynatraceProblem ["+PrbID+"] API response: "+str(response.status_code))
@@ -213,7 +213,7 @@ for l in range(len_openPrb):
     d_openPrb[l]['SanityStatusCode']=statusanacode
 
 #save result
-with open(BASE_DATA_DIR+'result.json', 'w') as fp:
+with open(BASE_DATA_DIR+'result_dynatrace_vs_SN.json', 'w') as fp:
     json.dump(d_openPrb, fp)
     
 logging.info("-->SUMMARY: ERROR["+str(nberror)+"] WARNING["+str(nbwarning)+"] ANALYZED["+str(nbana)+"] TOTAL["+str(len_openPrb)+"]")
