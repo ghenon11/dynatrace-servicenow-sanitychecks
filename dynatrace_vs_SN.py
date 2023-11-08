@@ -248,6 +248,9 @@ template= jinja2.Template("""
     .green {
         color: green;
     }
+    .orange {
+        color: orange;
+    }
 </style>
 <h1 align=center><b>Dynatrace - ServiceNow Sanity Check</b></h1>
 <h2 align=center>Status of Incidents linked to Open Problems</h1>
@@ -261,7 +264,16 @@ template= jinja2.Template("""
         {% endfor %}
     {% else %}
         {% for cell in row %}
-            <td class="{{'red' if cell == "ERROR"}}">{{cell}}</td>
+            {% if cell == "ERROR" -%}
+                <td class="red">
+            {% else -%}
+                {% if cell == "WARNING" -%}
+                    <td class="orange">
+                {% else -%}
+                    <td>
+                {% endif %}
+            {% endif %}
+            {{cell}}</td>
         {% endfor %}
     {% endif %}
 </tr>
