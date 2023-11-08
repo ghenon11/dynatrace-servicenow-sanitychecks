@@ -10,7 +10,7 @@ Also one to create a maintenance windows on a set of hosts immediately
 Scripts will output results as html file in directory ./www
 Scripts will put temporary files in directory ./data
 
-Update the configuration file (.ini) with your settings
+Update the configuration file (.ini) with your settings and rename it removing "_template" suffix
 
 Use -h parameter for more information
 Need request and jinga2 modules
