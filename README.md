@@ -13,4 +13,5 @@ Scripts will put temporary files in directory ./data
 Update the configuration file (.ini) with your settings and rename it removing "_template" suffix
 
 Use -h parameter for more information
-Need request and jinga2 modules
+
+Need request, pyyaml, dt and jinga2 modules
