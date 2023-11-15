@@ -55,7 +55,7 @@ TOKEN=config['DYNATRACE']['TOKEN_READ_ENTITY']
 
 def download_host_list(v_dt):
     try:
-        return v_dt.entities.list('type("HOST")', fields="properties.monitoringMode")
+        return list(v_dt.entities.list('type("HOST")', fields="properties.monitoringMode"))
                    
     except Exception as err:
         logging.error(err)
@@ -65,7 +65,7 @@ def download_host_list(v_dt):
 
 def download_hostgroup_list(v_dt):
     try:
-        return v_dt.entities.list('type("HOST_GROUP")', page_size=2000)
+        return list(v_dt.entities.list('type("HOST_GROUP")'))
                    
     except Exception as err:
         logging.error(err)
@@ -75,7 +75,7 @@ def download_hostgroup_list(v_dt):
 
 def download_disk_list(v_dt):
     try:
-        return v_dt.entities.list('type("DISK")', page_size=2000)
+        return list(v_dt.entities.list('type("DISK")'))
                    
     except Exception as err:
         logging.error(err)
@@ -113,6 +113,9 @@ host_list=download_host_list(dt)
 hostgroup_list=download_hostgroup_list(dt)
 disk_list=download_disk_list(dt)
 entity_list=[y for alist in [host_list, hostgroup_list, disk_list] for y in alist]
+#logging.info(str(hostgroup_list))
+#for y in disk_list:
+#    logging.info(y.entity_id+" - "+y.display_name)
 logging.info("Finding configurations files")
 
 #The list is created by placing elements in [ ] separated by commas “,”	The dictionary is created by placing elements in { } as “key”:”value”, each key-value pair is separated by commas “, “
