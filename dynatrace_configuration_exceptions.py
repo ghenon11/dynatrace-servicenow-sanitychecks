@@ -65,7 +65,7 @@ def download_host_list(v_dt):
 
 def download_hostgroup_list(v_dt):
     try:
-        return v_dt.entities.list('type("HOST_GROUP")')
+        return v_dt.entities.list('type("HOST_GROUP")', page_size=2000)
                    
     except Exception as err:
         logging.error(err)
@@ -73,6 +73,16 @@ def download_hostgroup_list(v_dt):
         exit()
     return True
 
+def download_disk_list(v_dt):
+    try:
+        return v_dt.entities.list('type("DISK")', page_size=2000)
+                   
+    except Exception as err:
+        logging.error(err)
+        logging.error(traceback.format_exc())
+        exit()
+    return True
+    
 def analyze_file(v_filename):
     try:
         logging.debug(v_filename)
@@ -91,19 +101,22 @@ def analyze_file(v_filename):
     return configs
 
 logging.info("Start")
+logging.info("Loading Entities")
 host_list=[]
 hostgroup_list=[]
+disk_list=[]
 entiry_list=[]
 exception_list=[]
 configs_list=[]
 dt = Dynatrace(DYNATRACE_URL,TOKEN)
 host_list=download_host_list(dt)
 hostgroup_list=download_hostgroup_list(dt)
-entity_list=[y for x in [host_list, hostgroup_list] for y in x]
-logging.info("Host and hostgroup exported")
+disk_list=download_disk_list(dt)
+entity_list=[y for alist in [host_list, hostgroup_list, disk_list] for y in alist]
+logging.info("Finding configurations files")
 
 #The list is created by placing elements in [ ] separated by commas “,”	The dictionary is created by placing elements in { } as “key”:”value”, each key-value pair is separated by commas “, “
-{'configs': [{'id': '0c599652-a603-360d-8b75-26f9d5d17b34', 'config': {'template': '0c599652-a603-360d-8b75-26f9d5d17b34.json', 'skip': False, 'originObjectId': 'vu9U3hXa3q0AAAABACRidWlsdGluOmFub21hbHktZGV0ZWN0aW9uLmRpc2stcnVsZXMABnRlbmFudAAGdGVuYW50ACQxODllNDM3Ni04MDZmLTNiNDctOWIyNC1hYjQ0NTkxYTYxNjO-71TeFdrerQ'}, 'type': {'settings': {'schema': 'builtin:anomaly-detection.disk-rules', 'schemaVersion': '1.0.3', 'scope': 'environment'}}}, {'id': 'd3ad27d7-f049-3471-b00f-8fc1c4b508c8', 'config': {'template': 'd3ad27d7-f049-3471-b00f-8fc1c4b508c8.json', 'skip': False, 'originObjectId': 'vu9U3hXa3q0AAAABACRidWlsdGluOmFub21hbHktZGV0ZWN0aW9uLmRpc2stcnVsZXMABnRlbmFudAAGdGVuYW50ACRmZjVhM2I1Mi1jMGNmLTMxYzMtYjVmOC0yOTcyN2QwY2FlMDO-71TeFdrerQ'}, 'type': {'settings': {'schema': 'builtin:anomaly-detection.disk-rules', 'schemaVersion': '1.0.3', 'scope': 'environment'}}}]}
+
 for current_path, dirs, files in os.walk(monaco_path):
     for name in files:
         if "config.yaml" in name.lower() and "builtinanomaly-detection" in current_path.lower():
@@ -118,6 +131,8 @@ for current_path, dirs, files in os.walk(monaco_path):
                     exception_list.append({"schema":configs_list[i]["type"]["settings"]["schema"],"type":"HOST","scope":scope,"name":"host_name"})
                 if "HOST_GROUP-" in scope:
                     exception_list.append({"schema":configs_list[i]["type"]["settings"]["schema"],"type":"HOST_GROUP","scope":scope,"name":"hostgroup_name"})
+                if "DISK-" in scope:
+                    exception_list.append({"schema":configs_list[i]["type"]["settings"]["schema"],"type":"DISK","scope":scope,"name":"disk_name"})
  
 logging.debug(str("Updated list"))   
 logging.info("Searching names")
@@ -127,12 +142,18 @@ for i in range(len(exception_list)):
         if entity_id==entity_list[l].entity_id:
             exception_list[i]["name"]=entity_list[l].display_name
 
+logging.info("Loading web page data")
 l_webpage=[]
 l_webpage.append(["Schema","Type","ID","Name"])
 for i in range(len(exception_list)):
     logging.debug(exception_list[i]["type"]+" "+exception_list[i]["name"]+" has a setting exception on "+exception_list[i]["schema"])               
-    l_webpage.append([exception_list[i]["schema"],exception_list[i]["type"],exception_list[i]["scope"],exception_list[i]["name"]])
- 
+#    l_webpage.append([exception_list[i]["schema"],exception_list[i]["type"],exception_list[i]["scope"],exception_list[i]["name"]])
+    link_schema=exception_list[i]["schema"]
+    if exception_list[i]["type"]=="DISK":
+        link_schema="builtin:anomaly-detection.disk-rules"
+    l_webpage.append(["<a href="+DYNATRACE_URL+"/ui/settings/"+link_schema+" target=\"_blank\" rel=\"noopener noreferrer\">"+exception_list[i]["schema"]+"</a>",exception_list[i]["type"],"<a href="+DYNATRACE_URL+"/ui/entity/"+exception_list[i]["scope"]+" target=\"_blank\" rel=\"noopener noreferrer\">"+exception_list[i]["scope"]+"</a>",exception_list[i]["name"]])
+
+
  
 logging.info("Create Web page")
 template= jinja2.Template("""
