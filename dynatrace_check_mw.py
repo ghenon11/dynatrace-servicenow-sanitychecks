@@ -6,16 +6,16 @@
 #
 # Dynatrace test script of dt API used as a templte
 # 
-import logging,traceback,argparse, configparser
+import logging,traceback,argparse,configparser
 from logging import raiseExceptions
 import os,datetime
 import requests
 import json
 import time
 from datetime import datetime
-from dynatrace import Dynatrace
 import pathlib
-
+from utils import dynatrace_utils
+    
 from dynatrace import Dynatrace
 from dynatrace.configuration_v1.maintenance_windows import (
     MaintenanceWindowService,
@@ -44,7 +44,6 @@ isdebug=args.debug
 
 # C:\Users\10023266\OneDrive - bioMerieux\ISOPS Core\dynatrace\Monaco\dynatrace-monaco\project_production
 
-
 loglevel=logging.INFO
 if isdebug:
     loglevel=logging.DEBUG
@@ -72,6 +71,7 @@ TOKEN=config['DYNATRACE']['TOKEN_READ_AUDITLOGS']
 
 
 
+
 def list_mw(dt: Dynatrace):
     mw = dt.maintenance_windows.list()
     assert isinstance(mw, PaginatedList)
@@ -84,54 +84,41 @@ def list_mw(dt: Dynatrace):
 def mw_info(dt: Dynatrace,v_mw_id):
     mw = dt.maintenance_windows.get(mw_id=v_mw_id)
 
-    return mw
+    return mw 
 
-   
-def send_metric(v_value):
-    # Custom metric data (replace placeholders with actual values)
-    #nowtimestamp=int(datetime.timestamp(datetime.now()) * 1000)
+try:
+    dt = Dynatrace(DYNATRACE_URL,TOKEN)
+
+    logging.info("Loading MW")
+    mw_list=[]
+    mw_list=list_mw(dt);
+    logging.debug(mw_list)
+
+    mw_full={}
+    logging.info("Loading MW details")
+    for i in range(len(mw_list)):
+    #for i in range(2):
+        mw_id=mw_list[i].id
+        logging.info("Looking MW id: "+mw_id)
+        mw_full=mw_info(dt,mw_id)
+        logging.debug(mw_full)
+        entities=mw_full.scope.entities
+        matches=mw_full.scope.matches
         
-    api_token=config['DYNATRACE']['TOKEN_METRICS']  
-    dynatrace_api_url=DYNATRACE_URL+"/api/v2/metrics/ingest"
-    headers = {"Authorization": "Api-Token " + api_token, "Content-Type": "text/plain"}
-    response = requests.post(dynatrace_api_url, headers=headers, data="apps.web.dynatrace.mw_scope.nofilter,dt.entity.application=APPLICATION-3A1C3B782A04AC39 "+str(v_value))
+        metric_value=1
+        if not entities and not matches:
+            logging.warning("MaintenanceWindow ID["+mw_full.id+"] name["+mw_full.name+"] has no defined scope")
+            metric_value=0 #unhealthy state
+        else:
+            logging.info("MW scope is defined: Entities:"+str(entities)+" Matches:"+str(matches))
 
-# Check the response status
-
-    logging.info(str(response))
-    # Check the response status
-    if response.status_code == 202:
-        logging.info("Metrics sent successfully")
-    else:
-        logging.error("Failed to send metrics. Status code:"+str(response.status_code)+", Response: "+response.text)
-    return response.status_code   
-
-dt = Dynatrace(DYNATRACE_URL,TOKEN)
-
-logging.info("Loading MW")
-mw_list=[]
-mw_list=list_mw(dt);
-logging.debug(mw_list)
-
-mw_full={}
-logging.info("Loading MW details****")
-for i in range(len(mw_list)):
-#for i in range(2):
-    mw_id=mw_list[i].id
-    logging.info("Looking MW id: "+mw_id)
-    mw_full=mw_info(dt,mw_id)
-    logging.debug(mw_full)
-    entities=mw_full.scope.entities
-    matches=mw_full.scope.matches
+    logging.info("Final status (1=healthy): "+str(metric_value))
+ 
+    dynatrace_utils.send_metric("apps.web.dynatrace.mw_scope.nofilter",metric_value)
     
-    metric_value=1
-    if not entities and not matches:
-        logging.warning("MaintenanceWindow ID["+mw_full.id+"] name["+mw_full.name+"] has no defined scope")
-        metric_value=0 #unhealthy state
-    else:
-        logging.info("MW scope is defined: Entities:"+str(entities)+" Matches:"+str(matches))
-
-logging.info("Final status (1=healthy): "+str(metric_value))  
-send_metric(metric_value)
-
+except Exception as err:
+        logging.error(err)
+        logging.error(traceback.format_exc())
+        exit()
+        
 logging.info("END")

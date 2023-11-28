@@ -6,6 +6,7 @@ import logging,traceback,argparse, configparser
 import jinja2
 from logging import raiseExceptions
 import os,datetime
+from utils import dynatrace_utils
 
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)) + os.sep)
 BASE_DATA_DIR = BASE_DIR + 'data'+ os.sep
@@ -142,7 +143,8 @@ for s in range(len_servers):
 logging.info('Servers not monitored:'+str(nbwarning))
 l_sorted_list = sorted(l_notmonitored, key=lambda x: x['name'])
 logging.info(l_sorted_list)
-
+logging.info("Send Metric")
+dynatrace_utils.send_metric("apps.web.dynatrace.hostnotmonitored",nbwarning)
 logging.info("Create Web page")
 #build list with needed information
 l_webpage=[]

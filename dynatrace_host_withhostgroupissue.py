@@ -11,6 +11,8 @@ import json
 import re
 from datetime import datetime
 
+from utils import dynatrace_utils
+
 BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)) + os.sep)
 BASE_DATA_DIR = BASE_DIR + 'data'+ os.sep
 REUSE=False
@@ -169,6 +171,10 @@ for l in range(len(l_sorted_list)):
         l_webpage.append([str(nbwarning),"<a href="+DYNATRACE_URL+"/ui/entity/"+l_sorted_list[l]['entityId']+" target=\"_blank\" rel=\"noopener noreferrer\">"+l_sorted_list[l]['displayName']+"</a>",l_hostgroupname,l_comments])
 logging.debug(l_webpage)
 logging.info("hosts with bad hostgroup: "+str(nbwarning))
+
+logging.info("Send Metric")
+dynatrace_utils.send_metric("apps.web.dynatrace.badhostgroup",nbwarning)
+
 
 logging.info("Create Web page")
 template= jinja2.Template("""
