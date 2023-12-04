@@ -109,6 +109,7 @@ try:
         if not entities and not matches:
             logging.warning("MaintenanceWindow ID["+mw_full.id+"] name["+mw_full.name+"] has no defined scope")
             metric_value=0 #unhealthy state
+            break
         else:
             logging.info("MW scope is defined: Entities:"+str(entities)+" Matches:"+str(matches))
 
