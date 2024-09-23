@@ -85,7 +85,10 @@ def build_open_problems():
             openproblems[i]['datetime_startTime']=problemStartime
             problemAlerting=openproblems[i]['problemFilters']
             problemaffectedEntities=openproblems[i]['affectedEntities']
-            mainEntity=problemaffectedEntities[0]['name']
+            if problemaffectedEntities[0]['name']:
+                mainEntity=problemaffectedEntities[0]['name']
+            else:
+                mainEntity="Entity Name not available"
             openproblems[i]['main_affectedEntity']=mainEntity
             logging.debug(str(i)+" | "+openproblems[i]['displayId']+" | "+openproblems[i]['title']+" | "+ openproblems[i]['datetime_startTime']+" | "+openproblems[i]['main_affectedEntity'])
             #smatch=["ServiceNow", "HealthCheck", "Synthetic"]
@@ -142,7 +145,7 @@ def find_incident_from_problem(PrbID):
                 json_data=json.load(f)
         else:
             logging.info("Query ServiceNow: find incident for problem ["+PrbID+"], using URL["+url+"]")
-            logging.debug("user["+user+"] passwd["+password+"]")
+            #logging.debug("user["+user+"] passwd["+password+"]")
             response = requests.get(url, auth=(user, password), headers=headers)
             response.raise_for_status()
             logging.debug("DynatraceProblem ["+PrbID+"] API response: "+str(response.status_code))
