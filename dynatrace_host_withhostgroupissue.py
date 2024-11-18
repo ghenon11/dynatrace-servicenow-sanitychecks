@@ -132,14 +132,15 @@ logging.info('check tag: key['+l_hostgroupchecktag[0]+'] value['+l_valuetoheck+'
 
 
 for l in range(len(l_sorted_list)):
-    #l_webpage.append([str(l),l_sorted_list[l]['name'],l_sorted_list[l]['sys_id']])
+    #l_webpage.append([str(l),l_sorted_list[l]['displayName'],l_sorted_list[l]['sys_id']])
     l_tags=l_sorted_list[l]['tags']
+ #   logging.debug("Host "+l_sorted_list[l]['displayName']+" tags["+str(l_tags)+"]")
     l_properties=l_sorted_list[l]['properties']
     l_comments=None
     l_hostgroupname=None
     # make check only on running hosts
     #if not any(d['main_color'] == 'red' for d in a):
-    if l_properties.get('state')=="RUNNING" and "monitoringMode" in l_properties:
+    if l_properties.get('state')=="RUNNING" and "monitoringMode" in l_properties and "KUBERNETES" not in str(l_tags): 
         if not "hostGroupName" in l_properties:
             l_comments="Missing Host Group"
             nbwarning=nbwarning+1
