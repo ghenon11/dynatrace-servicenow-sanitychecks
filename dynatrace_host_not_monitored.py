@@ -18,7 +18,9 @@ ap.add_argument("-d", "--debug", action="store_true",help="Set debug mode")
 args = ap.parse_args()
 
 isdebug=args.debug
-loglevel=logging.INFO
+#6JUN2025 default set to DEBUG insteof INFO
+#loglevel=logging.INFO
+loglevel=logging.DEBUG
 if isdebug:
     loglevel=logging.DEBUG
 
@@ -80,39 +82,96 @@ def list_deployed_server():
         logging.error(traceback.format_exc())
     return o_serverlist
 
-def list_monitored_host():
-    problemList=[]
-    base_url=DYNATRACE_URL+"/api/v2/entities?pageSize=3000&entitySelector=type%28%22HOST%22%29&from=now-10d&to=now&fields=properties.STATE"
+# def list_monitored_host():
+    # problemList=[]
+    #6JUN2025 request updated to not reach the page size limit (page size : from 3000 to 4000 ; from : last 3 days instead of 10 )
+    # base_url=DYNATRACE_URL+"/api/v2/entities?pageSize=6000&entitySelector=type%28%22HOST%22%29&from=now-3d&fields=properties.STATE"
+    #base_url=DYNATRACE_URL+"/api/v2/entities?pageSize=3000&entitySelector=type%28%22HOST%22%29&from=now-10d&to=now&fields=properties.STATE"
     #base_url=DYNATRACE_URL+"/api/v2/entities?pageSize=3000&entitySelector=type%28%22HOST%22%29,&from=now-10d&to=now"
-    datafile=BASE_DATA_DIR+'dynatrace_activehosts.json'
-    token=config['DYNATRACE']['TOKEN_READ_ENTITY']
+    # datafile=BASE_DATA_DIR+'dynatrace_activehosts.json'
+    # token=config['DYNATRACE']['TOKEN_READ_ENTITY']
+    # session = requests.Session()
+    # session.headers.update({"Accept":"application/json"})
+    # session.headers.update({"Content-Type":"application/json"})
+    # session.headers.update({"Authorization": "Api-Token "+token})
+    # try:
+        # if REUSE and os.path.isfile(datafile) :
+            # with open(datafile) as f:
+                # json_data=json.load(f)
+        # else:
+            # response = session.get(base_url)
+            # response.raise_for_status()
+            # logging.debug("Dynatrace list host API response: "+str(response.status_code))
+            # text = json.dumps(response.json(), sort_keys=True, indent=4)
+            # json_data = response.json()
+            # with open(datafile, 'w', encoding='utf-8') as f:
+                # json.dump(json_data, f, ensure_ascii=False, indent=4)
+
+        # hostscount=json_data['totalCount']
+        # logging.info("Hosts count:"+str(hostscount))
+        # o_hostlist=json_data['entities']
+        # for i in range(len(o_hostlist)):
+            # o_hostlist[i]['shortName']=o_hostlist[i]['displayName'].split('.')[0]
+    # except Exception as err:
+        # logging.error(err)
+        # logging.error(traceback.format_exc())
+    # return o_hostlist
+
+def list_monitored_host():
+    problemList = []
+    base_url = DYNATRACE_URL + "/api/v2/entities?pageSize=2000&entitySelector=type%28%22HOST%22%29&from=now-3d&fields=properties.STATE"
+    datafile = BASE_DATA_DIR + 'dynatrace_activehosts.json'
+    token = config['DYNATRACE']['TOKEN_READ_ENTITY']
     session = requests.Session()
-    session.headers.update({"Accept":"application/json"})
-    session.headers.update({"Content-Type":"application/json"})
-    session.headers.update({"Authorization": "Api-Token "+token})
+    session.headers.update({
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Api-Token " + token
+    })
+
     try:
-        if REUSE and os.path.isfile(datafile) :
+        if REUSE and os.path.isfile(datafile):
             with open(datafile) as f:
-                json_data=json.load(f)
+                json_data = json.load(f)
         else:
-            response = session.get(base_url)
-            response.raise_for_status()
-            logging.debug("Dynatrace list host API response: "+str(response.status_code))
-       #     text = json.dumps(response.json(), sort_keys=True, indent=4)
-            json_data = response.json()
+            json_data = {}
+            o_hostlist = []
+            i=0
+            while True:
+                i+=1
+                response = session.get(base_url)
+                response.raise_for_status()
+                logging.debug("Dynatrace list host API response: " + str(response.status_code))
+                page_data = response.json()
+
+                if 'entities' in page_data:
+                    o_hostlist.extend(page_data['entities'])
+                    logging.info(f"Hosts count after page {i}: {len(o_hostlist)}")
+
+                if 'nextPageKey' in page_data:
+                    base_url = DYNATRACE_URL + "/api/v2/entities?nextPageKey=" + page_data['nextPageKey']
+                else:
+                    break
+
+            json_data['entities'] = o_hostlist
+            json_data['totalCount'] = len(o_hostlist)
+
             with open(datafile, 'w', encoding='utf-8') as f:
                 json.dump(json_data, f, ensure_ascii=False, indent=4)
 
-        hostscount=json_data['totalCount']
-        logging.info("Hosts count:"+str(hostscount))
-        o_hostlist=json_data['entities']
+        hostscount = json_data['totalCount']
+        logging.info("Hosts count: " + str(hostscount))
+        o_hostlist = json_data['entities']
         for i in range(len(o_hostlist)):
-            o_hostlist[i]['shortName']=o_hostlist[i]['displayName'].split('.')[0]
+            o_hostlist[i]['shortName'] = o_hostlist[i]['displayName'].split('.')[0]
     except Exception as err:
         logging.error(err)
         logging.error(traceback.format_exc())
+
     return o_hostlist
-    
+
+
+
 logging.info("Start")
 logging.info("Retrieve Servers")
 

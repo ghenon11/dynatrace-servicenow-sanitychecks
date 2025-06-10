@@ -1,3 +1,5 @@
+# SCRIPT TO TRACK CHANGES
+#
 import logging,traceback,argparse, configparser
 import jinja2
 from logging import raiseExceptions
